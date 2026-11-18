@@ -2,7 +2,7 @@
   <img src="docs/assets/hero.png" alt="Day 09 Lab: pipeline kiểm nhãn tự động" width="100%">
 </p>
 
-# Day 09 Lab — Nguyễn Quốc Hùng: 04038 - Nguyễn Quốc Hùng
+# Day 09 Lab — Nguyễn Quốc Hưng: 2A202604038 
 
 <p align="center">
   <img alt="cá nhân" src="https://img.shields.io/badge/lab-cá%20nhân-0b1f3a">
