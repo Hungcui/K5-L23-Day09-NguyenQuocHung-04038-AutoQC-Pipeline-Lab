@@ -84,3 +84,12 @@ Kết luận hiện tại là **HOLD**.
 - **Prompt chính**: Dựa trên docstring và mô tả kiểm thử TDD trong các module `label_format.py`, `gate.py`, `autofix.py`, `second_opinion.py` để sinh khung thuật toán so khớp hình học và điều kiện lọc.
 - **Cách kiểm tra code AI**: Chạy bộ unit test 79 ca kiểm thử liên tục; tự viết thêm các ca kiểm tra biên (ảnh hỏng bytes, dòng chứa giá trị `nan`, toạ độ âm, box tràn viền).
 - **Một lần AI đề xuất sai**: Ban đầu trong `autofix.py`, AI đề xuất xoá từng dòng trực tiếp trong vòng lặp đọc file, dẫn đến việc làm xô lệch số thứ tự dòng (`lineno`) của các lỗi xuất hiện phía sau trong cùng một file nhãn; sau đó mã nguồn đã được sửa lại theo cơ chế gom nhóm theo file và đọc/ghi lại toàn bộ file một lần duy nhất.
+
+### (c) Phân tích lọc box nhỏ trên CVAT (Thưởng +2 điểm):
+- **Bộ lọc áp dụng trên CVAT**: Lọc quy tắc `width < 20` trên các ảnh đầu hàng đợi duyệt (như `img_0026`, `img_0051`, `img_0161`).
+- **Đối chiếu với `BOX_TINY` của pipeline**:
+  - Pipeline dùng ngưỡng 12px (`min_box_px: 12`) và bắt được 6 box quá nhỏ trên các ảnh `img_0026` (dòng 6), `img_0051` (dòng 5), `img_0069` (dòng 2), `img_0161` (dòng 2, 3, 4).
+  - Khi tăng ngưỡng lên 20px trên CVAT (theo guideline slide), số lượng box khớp bộ lọc tăng thêm (bắt thêm các box người đi bộ ở rất xa). Cả hai công cụ đều bắt trùng khớp các box ở `img_0161` (3 box người đi bộ tí hon) và `img_0026`.
+- **Vai trò của thuộc tính `can_review`**:
+  - Annotator gán `can_review == true` khi gặp các ca khó không chắc chắn (vật thể bị che khuất > 80%, thời tiết xấu/đêm tối) theo nguyên tắc *"Không chắc thì đánh dấu, không đoán bừa"*.
+  - Trong pipeline tự động, cơ chế tương tự được thực hiện bằng cách tính điểm nguy cơ (`review_queue.py`) đẩy các ca cảnh báo (`POSSIBLE_WRONG_CLASS`, `POSSIBLE_MISSING`) lên đầu danh sách để chuyển chuyên gia/QA Lead thẩm định.
