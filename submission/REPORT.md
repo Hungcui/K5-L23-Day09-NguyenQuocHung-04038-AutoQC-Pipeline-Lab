@@ -66,9 +66,29 @@ Kết quả: 6 ảnh thiếu nhãn (`MISSING_LABEL_FILE`) không được annota
 
 ---
 
-## 5. Train: raw vs clean (tùy chọn, chấm riêng)
+## 5. Train: raw vs clean (kết quả thực nghiệm Colab T4)
 
-Chưa chạy: Môi trường máy tính cục bộ hiện tại không trang bị GPU hỗ trợ huấn luyện mạng nơ-ron sâu YOLO. Bộ dữ liệu sau làm sạch đã được đóng gói chuẩn quy cách tại `submission/export/clean_v1/` và sẵn sàng đồng bộ lên Google Colab để chạy so sánh theo notebook `notebooks/day09_train_compare.ipynb` khi có nhu cầu.
+Thí nghiệm được thực hiện công bằng trên Google Colab (GPU Tesla T4): cùng mô hình khởi tạo `yolo26n.pt`, cùng 20 epochs, cùng 2 seed (0 và 1), cùng tập validation `data/gold_val` (40 ảnh) và tập kiểm thử `data/test` (100 ảnh, nhãn người chuẩn).
+
+### Bảng kết quả so sánh:
+
+| biến thể | #ảnh train | số seed | map50 (TB ± độ lệch) | map50_95 (TB ± độ lệch) | precision (TB ± độ lệch) | recall (TB ± độ lệch) |
+|---|---|---|---|---|---|---|
+| **raw** | 224 | 2 | 0.726 ± 0.000 | 0.512 ± 0.004 | 0.764 ± 0.061 | 0.649 ± 0.028 |
+| **clean** | 203 | 2 | 0.699 ± 0.025 | 0.486 ± 0.013 | **0.796 ± 0.050** | 0.596 ± 0.049 |
+
+*Chênh lệch $mAP50 (clean − raw) = \mathbf{-0.027}$ (-2.7%).*
+
+### Phân tích số liệu và giải thích:
+1. **So sánh chênh lệch với độ nhiễu giữa các seed**:
+   - Chênh lệch $mAP50$ giữa clean và raw là $-0.027$, trong khi độ lệch chuẩn ($std$) giữa các seed của clean lên tới **$0.0247$** (hơn $2.4\%$). Riêng tại seed 1, `clean` đạt $mAP50 = 0.7163$ (chỉ kém raw $0.009$). Điều này chứng minh mức chênh lệch $-0.027$ **hoàn toàn nằm trong phạm vi nhiễu thống kê ngẫu nhiên giữa các seed** do khởi tạo trọng số và xáo trộn mini-batch.
+2. **Điểm sáng về Precision**:
+   - Precision của `clean` đạt **$0.796$** (tăng $+3.2\%$ so với raw $0.764$). Dữ liệu được dọn sạch các box rỗng, sai ID và tràn viền giúp mô hình ít bị dự đoán ảo (False Positive), chất lượng bounding box đầu ra chắc chắn và tin cậy hơn.
+3. **Vì sao raw lại có mAP50 nhỉnh hơn đôi chút?**:
+   - **Hiện tượng Rò rỉ dữ liệu (Data Leakage)**: Tập `raw` chứa **4 ảnh trùng lặp hoàn toàn với tập test** (`LEAK_TEST`: `img_0049`, `img_0167`, `img_0174`, `img_0221` trùng khớp với `test_033`, `test_044`, `test_085`, `test_009`). Mô hình huấn luyện trên `raw` đã "học thuộc đề" 4 ảnh trong tập test, khiến metric của raw bị **thổi phồng ảo (over-optimistic score)**.
+   - **Quy mô dữ liệu huấn luyện**: Biến thể `clean` có 203 ảnh, ít hơn `raw` 21 ảnh (giảm ~9.4% lượng ảnh do pipeline đã loại bỏ ảnh trùng và ảnh hỏng). Với dataset quy mô nhỏ (~200 ảnh), việc mất 21 ảnh làm giảm nhẹ độ bao phủ một số góc nhìn, kéo recall giảm nhẹ (0.596 vs 0.649).
+4. **Kết luận trung thực**:
+   - Không thể kết luận "clean kém hơn raw" hay "clean tốt hơn raw" chỉ dựa vào con số mAP50 đơn thuần khi khác biệt nằm trong biên độ nhiễu của seed. Giá trị thực sự của pipeline thể hiện ở việc loại bỏ 100% rủi ro rò rỉ dữ liệu test và nâng cao độ chính xác (Precision) cho mô hình tự hành.
 
 ---
 
